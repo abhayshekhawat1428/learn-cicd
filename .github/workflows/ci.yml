@@ -1,14 +1,17 @@
 name: CI Pipeline
 
-# Trigger: runs on every push and every pull request to main
 on:
   push:
     branches: [main, 'feature/**']
   pull_request:
     branches: [main]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  # Job 1: Run tests
+  # ─── Stage 1: Test + Lint (run in parallel) ───────────────
   test:
     runs-on: ubuntu-latest
     steps:
@@ -25,3 +28,71 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Check for syntax errors
+        run: node --check server.js && node --check test.js && echo "✅ No syntax errors"
+
+      - name: Check code style (basic)
+        run: |
+          echo "Checking for console.error (should use proper logging)..."
+          ! grep -rn 'console\.error' server.js || echo "⚠️  Found console.error (warning only)"
+          echo "Checking for TODO/FIXME comments..."
+          ! grep -rn 'TODO\|FIXME' server.js || echo "⚠️  Found TODO/FIXME comments"
+          echo "✅ Lint checks complete"
+
+  # ─── Stage 2: Docker Build + Push (only after test+lint pass) ─
+  build:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=${{ github.ref_name }}-
+            type=ref,event=branch
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Print image info
+        run: |
+          echo "════════════════════════════════════════"
+          echo "  IMAGE PUSHED SUCCESSFULLY"
+          echo "  Tags: ${{ steps.meta.outputs.tags }}"
+          echo "  Digest: (check packages tab)"
+          echo ""
+          echo "  Pull with:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+          echo "════════════════════════════════════════"
