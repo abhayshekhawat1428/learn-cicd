@@ -52,7 +52,13 @@ async function runTests() {
   assert('Syndicators has data array', Array.isArray(syn.body.data));
   assert('Syndicators has 2 items', syn.body.data.length === 2);
 
-  // Test 5: 404 for unknown routes
+  // Test 5: Version endpoint
+  const ver = await request('/dd/api/v1/version');
+  assert('Version returns 200', ver.status === 200);
+  assert('Version has app name', ver.body.app === 'dd-api');
+  assert('Version has node version', ver.body.node.startsWith('v'));
+
+  // Test 6: 404 for unknown routes
   const notfound = await request('/unknown');
   assert('Unknown route returns 404', notfound.status === 404);
 
