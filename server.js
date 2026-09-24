@@ -2,6 +2,7 @@ const http = require('http');
 
 let livenessOk = true;
 let readinessOk = true;
+let requestCount = 0;
 
 const config = {
   APP_NAME: process.env.APP_NAME || 'dd-api',
@@ -14,6 +15,7 @@ const config = {
 };
 
 const server = http.createServer((req, res) => {
+  requestCount++;
   res.setHeader('Content-Type', 'application/json');
 
   if (req.url === '/dd/api/v1/health/liveness') {
@@ -44,6 +46,13 @@ const server = http.createServer((req, res) => {
       uptime: Math.floor(process.uptime()),
       memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
       timestamp: new Date().toISOString(),
+    }));
+  } else if (req.url === '/dd/api/v1/metrics') {
+    res.end(JSON.stringify({
+      requests_total: requestCount,
+      uptime_seconds: Math.floor(process.uptime()),
+      memory_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      cpu_user_ms: Math.round(process.cpuUsage().user / 1000),
     }));
   } else if (req.url === '/dd/api/v1/break-liveness') {
     livenessOk = false;

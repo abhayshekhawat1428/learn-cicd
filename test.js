@@ -64,7 +64,14 @@ async function runTests() {
   assert('Status has uptime', typeof status.body.uptime === 'number');
   assert('Status has memory', status.body.memory.endsWith('MB'));
 
-  // Test 7: 404 for unknown routes
+  // Test 7: Metrics endpoint
+  const metrics = await request('/dd/api/v1/metrics');
+  assert('Metrics returns 200', metrics.status === 200);
+  assert('Metrics has requests_total', typeof metrics.body.requests_total === 'number');
+  assert('Metrics has uptime_seconds', typeof metrics.body.uptime_seconds === 'number');
+  assert('Metrics has memory_mb', typeof metrics.body.memory_mb === 'number');
+
+  // Test 8: 404 for unknown routes
   const notfound = await request('/unknown');
   assert('Unknown route returns 404', notfound.status === 404);
 
