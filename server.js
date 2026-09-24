@@ -31,6 +31,13 @@ const server = http.createServer((req, res) => {
         { id: 2, name: 'CBS Radio' },
       ],
     }));
+  } else if (req.url === '/dd/api/v1/version') {
+    res.end(JSON.stringify({
+      app: config.APP_NAME,
+      version: config.VERSION,
+      node: process.version,
+      uptime: Math.floor(process.uptime()),
+    }));
   } else if (req.url === '/dd/api/v1/break-liveness') {
     livenessOk = false;
     res.end(JSON.stringify({ message: 'Liveness broken!' }));
