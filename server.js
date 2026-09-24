@@ -38,6 +38,13 @@ const server = http.createServer((req, res) => {
       node: process.version,
       uptime: Math.floor(process.uptime()),
     }));
+  } else if (req.url === '/dd/api/v1/status') {
+    res.end(JSON.stringify({
+      status: 'healthy',
+      uptime: Math.floor(process.uptime()),
+      memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+      timestamp: new Date().toISOString(),
+    }));
   } else if (req.url === '/dd/api/v1/break-liveness') {
     livenessOk = false;
     res.end(JSON.stringify({ message: 'Liveness broken!' }));
