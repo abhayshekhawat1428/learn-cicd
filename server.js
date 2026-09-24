@@ -28,7 +28,6 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
       data: [
         { id: 1, name: 'ABC Network' },
-        { id: 2, name: 'CBS Radio' },
       ],
     }));
   } else if (req.url === '/dd/api/v1/break-liveness') {
