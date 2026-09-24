@@ -58,7 +58,13 @@ async function runTests() {
   assert('Version has app name', ver.body.app === 'dd-api');
   assert('Version has node version', ver.body.node.startsWith('v'));
 
-  // Test 6: 404 for unknown routes
+  // Test 6: Status endpoint
+  const status = await request('/dd/api/v1/status');
+  assert('Status returns 200', status.status === 200);
+  assert('Status has uptime', typeof status.body.uptime === 'number');
+  assert('Status has memory', status.body.memory.endsWith('MB'));
+
+  // Test 7: 404 for unknown routes
   const notfound = await request('/unknown');
   assert('Unknown route returns 404', notfound.status === 404);
 
